@@ -11,15 +11,8 @@ one_dimension_cat <-function(n,model_){
   a = exp(rnorm(n))
   c = rbeta(n,2,10)
   switch(model_,
-         '1PL' = return(list('b'=b)),
-         '2PL' = return(list('a'=a,'b'=b)),
-         '3PL' = return(list('a'=a,'b'=b,'c'=c)))
+         '1PL' = return(data.frame(b=b)),
+         '2PL' = return(data.frame(a=a,b=b)),
+         '3PL' = return(data.frame(a=a,b=b,c=c)))
 }
 
-Multi_dimension_cat <- function(){
-  
-}
-
-CD_cat  <- function(){
-  
-}
