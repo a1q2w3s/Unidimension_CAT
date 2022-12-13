@@ -13,9 +13,9 @@ lapply(dir(),function(x){
 # set index ---------------------------------------------------------------
 
 n_library = 2000 # size of item library
-theta_t = 0.333 # true ability value of our subject 
-n_first = 3 # number of items before adaptation
-fix_length = 30 # length of fix-length exam
+theta_t = 1.333 # true ability value of our subject 
+n_first = 5 # number of items before adaptation
+fix_length = 40 # length of fix-length exam
 ability_est_method = MLE # MLE or MAP
 selection_strategy = random_select #random_select or MFI
 

@@ -1,8 +1,8 @@
 #install.packages('ggplot2')
 library(ggplot2)
 
-n_library = 2000
-theta_t = 0.333
+n_library = 200
+theta_t = -0.333
 fix_length = 30
 first_n = 5
 D=1.702
@@ -50,6 +50,7 @@ answer <- function(theta,b,a){
 
 flag = rep(TRUE,n_library)
 
+theta_est=c()
 result = c()
 
 items = sample(n_library,first_n)
@@ -60,14 +61,14 @@ for (i in c(1:first_n)) {
   #Sys.sleep(0.5)
 }
 
-theta_est =log(max(sum(as.numeric(result)),1)/max((first_n-sum(as.numeric(result))),1))
-theta_est = MAP(as.numeric(result),theta_est,item_library$b[items],item_library$a[items])
+theta_est[1] =log(max(sum(as.numeric(result)),1)/max((first_n-sum(as.numeric(result))),1))
+theta_est[5] = MAP(as.numeric(result),theta_est[1],item_library$b[items],item_library$a[items])
 
 for (i in c((first_n+1):fix_length)) {
   repeat{
-    item = which.min(abs(theta_est-item_library$b[flag]))
+    item = which.min(abs(theta_est[i-1]-item_library$b[flag]))
     item = which(item_library$b==item_library$b[flag][item])
-    message('#',theta_est,'  ',item_library$b[item],'  ')
+    message('#',theta_est[i-1],'  ',item_library$b[item],'  ')
     #item = round(runif(1)*(n_library-1)+1)#select_strategy()
     # if(flag[item]){
       flag[item] = FALSE
@@ -77,8 +78,9 @@ for (i in c((first_n+1):fix_length)) {
     
   }
   result[i]=answer(theta_t,item_library$b[item],item_library$a[item])
-  theta_est = MAP(as.numeric(result),theta_est,item_library$b[items],item_library$a[items])
+  theta_est[i] = MAP(as.numeric(result),theta_est[i-1],item_library$b[items],item_library$a[items])
+  plot(theta_est[6:fix_length],ylim=c(-3,3))
   #message(theta_est)
-  #Sys.sleep(0.5)
+  Sys.sleep(0.5)
 }
-
+theta_est[fix_length]
