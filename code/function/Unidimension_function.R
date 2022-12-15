@@ -22,46 +22,78 @@ uni_model <- function(theta,item_parameters){
 
 item_generate <- function(n,IRT_model){
   
-  a = exp(rnorm(n_library)) # discrimination parameter(log normal)
+  b = rnorm(n) # difficulty parameter(normal)
+  repeat{ # no too large abs(b)
+    index = abs(b)>4
+    b[index] = rnorm(sum(index))
+    if(sum(index)==0) break
+  }
+  
+  a = exp(rnorm(n)) # discrimination parameter(log normal)
   repeat{ # no too large a
-    index = a>4
+    index = a>5
     a[index] = exp(rnorm(sum(index)))
     if(sum(index)==0) break
   }
   
-  b = rnorm(n_library) # difficulty parameter(normal)
-  id = c(1:n_library)
+  c = rbeta(n,2,20) # guessing parameter(beta)
   
-  item_library = data.frame(id,a,b)
+  if(IRT_model=='2PL'){
+    c = 0
+  }else if(IRT_model=='1PL'){
+    a = 1
+    c = 0
+  }
+  
+  id = c(1:n)
+  item_library = data.frame(id,a,b,c)
   item_library = item_library[order(item_library$b),]
-  
   return(item_library)
 }
 
 # ability estimation ------------------------------------------------------
 
-##ability_est_method(result,theta,b,a=1,c=0)
+##ability_est_method(result,theta,item_parameters)
+
+EAP_MLE <- function(result,theta,item_parameters){
+  if(length(result)<10 || sum(result)==length(result) || sum(result)==0) return(EAP(result,theta,item_parameters))
+  else return(MLE(result,theta,item_parameters))
+}
+
+EAP <- function(result,theta,item_parameters,steps=0.2){
+  b = item_parameters$b
+  a = if(is.null(item_parameters$a)) 1 else item_parameters$a
+  c = if(is.null(item_parameters$c)) 0 else item_parameters$c
+  x = seq(-4,4,steps)
+  
+  p = apply(matrix(x),1,uni_model,item_parameters=item_parameters)
+  l = apply(p,2,function(p){
+    return(prod((p^result)*(1-p)^(1-result)))
+  })
+  theta =
+    (sum(x*l*pnorm(x)))/(sum(l*pnorm(x)))
+  return(theta)
+}
 
 MLE <- function(result,theta,item_parameters,episilon=1e-3){
   b = item_parameters$b
   a = if(is.null(item_parameters$a)) 1 else item_parameters$a
   c = if(is.null(item_parameters$c)) 0 else item_parameters$c
+  theta0 = theta
   lambda = 1 # down-hill index
   temp_d1 = Inf
   temp_d2 = 0
   temp_theta = theta
-  #message('#############')
+
   ## N-R iteration
   repeat{
-    #message('========')
-    #message('theta_old:',theta)
     p_est = uni_model(theta,item_parameters)
-    
     #first derivation of log-likelihood
     d1 = sum(D*a*(p_est-c)/(1-c)*(result-p_est)/p_est)
     #second derivation of log-likelihood
     d2 = -D^2*sum(a^2*(1-p_est)*(p_est-c)*(c*result-p_est^2)/p_est^2/(1-c)^2)
     d2 = sum(-D^2*a^2*p_est*(1-p_est))
+
     # down-hill index check
     if(abs(temp_d1)<abs(d1)){
       d1 = temp_d1
@@ -74,17 +106,15 @@ MLE <- function(result,theta,item_parameters,episilon=1e-3){
       temp_d2 = d2
       temp_theta = theta
     }
-    
+
     delta = lambda*d1/d2
     theta = theta-delta
-    #message('delta:',delta)
-    #message('theta_now:',theta)
+    
     if(d2==0) break
     if(abs(delta)<episilon) break # iteration exit
+    if(theta > 4) return(theta0)
+    if(theta < -4) return(theta0)
   }
-  
-  theta = if(theta > 4) 4 else theta
-  theta = if(theta < -4) -4 else theta
   
   return(theta)
 }
@@ -93,22 +123,22 @@ MAP <- function(result,theta,item_parameters,episilon=1e-3){
   b = item_parameters$b
   a = if(is.null(item_parameters$a)) 1 else item_parameters$a
   c = if(is.null(item_parameters$c)) 0 else item_parameters$c
+  theta0 = theta
   lambda = 1 # down-hill index
   temp_d1 = Inf
   temp_d2 = 0
   temp_theta = theta
-  #message('#############')
+  
   ## N-R iteration
   repeat{
-    #message('========')
-    #message('theta_old:',theta)
     p_est = uni_model(theta,item_parameters)
-    
     #first derivation of log-likelihood
     d1 = sum(D*a*(p_est-c)/(1-c)*(result-p_est)/p_est)-theta
     #second derivation of log-likelihood
     d2 = -D^2*sum(a^2*(1-p_est)*(p_est-c)*(c*result-p_est^2)/p_est^2/(1-c)^2)-1
     d2 = sum(-D^2*a^2*p_est*(1-p_est))
+    
+   
     # down-hill index check
     if(abs(temp_d1)<abs(d1)){
       d1 = temp_d1
@@ -121,18 +151,16 @@ MAP <- function(result,theta,item_parameters,episilon=1e-3){
       temp_d2 = d2
       temp_theta = theta
     }
+   
     
     delta = lambda*d1/d2
     theta = theta-delta
-    #message('delta:',delta)
-    #message('theta_now:',theta)
     if(d2==0) break
     if(abs(delta)<episilon) break # iteration exit
+    if(theta > 4) return(theta0)
+    if(theta < -4) return(theta0)
   }
-  
-  theta = if(theta > 4) 4 else theta
-  theta = if(theta < -4) -4 else theta
-  
+
   return(theta)
 }
 
@@ -153,10 +181,12 @@ MFI <- function(flag,item_library,theta){
   item_id = item_library$id[flag][which.min(abs(theta-item_library$b[flag]))]
   # select the biggest a
   if(length(item_id)>1)
-    item_id = item_library$id[item_library$id %in% item_id][which.max(item_library$a[item_library$id %in% item_id])]
+    item_id = 
+      item_library$id[item_library$id %in% item_id][which.max(item_library$a[item_library$id %in% item_id])]
   # select the smallest c
   if(length(item_id)>1)
-    item_id = item_library$id[item_library$id %in% item_id][which.min(item_library$c[item_library$id %in% item_id])]
+    item_id = 
+      item_library$id[item_library$id %in% item_id][which.min(item_library$c[item_library$id %in% item_id])]
   item = which(item_library$id==item_id)
 }
 
