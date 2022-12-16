@@ -1,17 +1,26 @@
 
+# 引入函数
 setwd("./code/function")
 lapply(dir(),function(x){
   source(x)
 })
 
+# 模拟自适应测试过程
 CAT <- function(theta_t,
                 item_library,
-                n_first,# number of items before adaptation
-                fix_length,# length of fix-length exam
-                ability_est_method,# EAP_MLE or MAP
-                selection_strategy, # random_select or MFI
-                draw = FALSE
+                n_first,
+                fix_length,
+                ability_est_method,
+                selection_strategy,
+                draw = FALSE 
 ){
+  # theta_t, # 当前模拟受测者能力真值
+  # item_library, # 题库
+  # n_first, # 进入自适应测试前随机题目的数量
+  # fix_length, # 固定长度测验
+  # ability_est_method, # 能力估计方法：EAP_MLE、EAP或MAP
+  # selection_strategy, # 选题策略：random_select或MFI
+  # draw = FALSE #是否绘制自适应过程示意图
   n_library = dim(item_library)[1]
   flag = rep(TRUE, n_library) # sign items which not used(FALSE->used)
   theta_est = c() # save estimated theta
@@ -97,30 +106,32 @@ CAT <- function(theta_t,
   return(tail(theta_est,1))
 }  
 
+# 程序一：展示自适应流程
 n_library = 200
-IRT_model = '2PL'
+IRT_model = '3PL'
 item_library = item_generate(n_library,IRT_model)
 CAT(theta_t = rnorm(1),
     item_library,
     n_first = 5,
     fix_length = 40,
-    ability_est_method = 'MLE',
+    ability_est_method = 'MAP',
     selection_strategy = 'MFI',
     draw = TRUE
 )
 
-bias = c()
-rmse = c()
-runtime = c()
-epoch = 1000
-for (n_library in c(200,2000)) {
-  for(IRT_model in c('1PL','2PL','3PL')){
+# 程序二：批量模拟受测者，比较不同条件下估计精度、运行时间
+abs = c() # 记录评价指标abs
+rmse = c() # 记录评价指标RMSE
+runtime = c() # 记录单个受测者模拟时间
+epoch = 1000 # 每个条件模拟受测者数量
+for (n_library in c(200,2000)) { # 两种题库数量条件：200题、2000题
+  for(IRT_model in c('1PL','2PL','3PL')){ # 三种题目测量模型：1PL、2PL、3PL
     item_library = item_generate(n_library,IRT_model)
-    for(ability_est_method in c('EAP_MLE','EAP','MAP')){
-      for (selection_strategy in c('random_select','MFI')) {
-        est = c() # store estimated theta
-        tru = c() # store true theta
-        tempt = c() # store run time per epoch
+    for(ability_est_method in c('EAP_MLE','EAP','MAP')){ # 三种能力估计方法：EAP_MLE、EAP、MLE
+      for (selection_strategy in c('random_select','MFI')) { # 两种选题策略：随机选题、MFI
+        est = c() # 暂存能力估计值
+        tru = c() # 暂存能力真值
+        tempt = c() # 暂存运行时间
         for (k in c(1:epoch)) {
           if(k%%100==0){
             message(
@@ -170,7 +181,7 @@ for (n_library in c(200,2000)) {
         
         dev.off()
         
-        bias = append(bias,sum(abs(est-tru))/epoch)
+        abs = append(abs,sum(abs(est-tru))/epoch)
         rmse = append(rmse,sqrt(sum((est-tru)^2)/epoch))
         runtime = append(runtime,mean(tempt))
       }
