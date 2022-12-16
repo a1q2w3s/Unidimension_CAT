@@ -134,7 +134,7 @@ for (n_library in c(200,2000)) { # 两种题库数量条件：200题、2000题
         tempt = c() # 暂存运行时间
         for (k in c(1:epoch)) {
           if(k%%100==0){
-            message(
+            message( # 进度条
               'n_library: ',n_library,', ',
               'IRT_model: ',IRT_model,', ',
               'est_method: ',ability_est_method,', ',
@@ -146,15 +146,13 @@ for (n_library in c(200,2000)) { # 两种题库数量条件：200题、2000题
           est[k] <- theta_est <- CAT(theta_t,item_library,n_first = 5,fix_length = 40,ability_est_method,selection_strategy)
           tempt[k] = Sys.time()-t0
         }
-  
+        # 绘制并存储本次条件下的真值-估计值散点图
         png(filename = paste('../../pic/',
                            n_library,'_',
                            IRT_model,'_',
                            ability_est_method,'_',
                            selection_strategy,
                            '.png',sep=''))
-        message('est: ',max(est),', ',min(est))
-        message('tru: ',max(tru),', ',min(tru))
         plot(x = tru,
              y = est,
              xlim = c(-4,4),
@@ -178,9 +176,9 @@ for (n_library in c(200,2000)) { # 两种题库数量条件：200题、2000题
             '(number of items = ', n_library,', ',
             'model = ', IRT_model,')',
             sep = ''))
-        
         dev.off()
         
+        #存储评价指标
         abs = append(abs,sum(abs(est-tru))/epoch)
         rmse = append(rmse,sqrt(sum((est-tru)^2)/epoch))
         runtime = append(runtime,mean(tempt))
