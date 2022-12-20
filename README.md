@@ -7,7 +7,7 @@
 
 本项目为《自适应测验与自适应诊断评估》课程的期末习作，旨在通过R编写的模拟程序，实现**单维度**能力参数下的计算机自适应测验（computerized adaptive testing， CAT）。
 
-代码存储于code文件夹中，包括主程序Unidimension_CAT.R和function文件夹中的自适应测验组块Unidimension_function.R；此外script文件夹存储项目编写过程中的一些草稿。
+代码存储于code文件夹中，包括主程序Unidimension_CAT.R和function文件夹中的测验组块Unidimension_function.R；此外script文件夹存储项目编写过程中的一些草稿。
 
 ### CAT组块
 
